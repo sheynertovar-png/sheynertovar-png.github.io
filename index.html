@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EntropySolver - Calculadora de Entropía para Gases Ideales</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <!-- NAVEGACIÓN -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <span class="navbar-logo">⚙️ EntropySolver</span>
+                <span class="navbar-subtitle">Calculadora de Entropía - Gases Ideales</span>
+            </div>
+            <ul class="navbar-menu">
+                <li><a href="#calculadora" onclick="cambiarSeccion('calculadora')">Calculadora</a></li>
+                <li><a href="#teoria" onclick="cambiarSeccion('teoria')">Teoría</a></li>
+                <li><a href="#ayuda" onclick="cambiarSeccion('ayuda')">Ayuda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- SECCIÓN: CALCULADORA -->
+        <section id="calculadora" class="seccion activa">
+            <div class="contenido-principal">
+                <!-- Panel Izquierdo: Entrada de Datos -->
+                <div class="panel panel-entrada">
+                    <h2>📊 Datos de Entrada</h2>
+                    
+                    <!-- Selección de Proceso -->
+                    <div class="grupo-control">
+                        <label for="tipo_proceso">Tipo de Proceso:</label>
+                        <select id="tipo_proceso" onchange="actualizarCampos()">
+                            <option value="tv">T-V (Temperatura y Volumen)</option>
+                            <option value="tp">T-P (Temperatura y Presión)</option>
+                            <option value="isotermico">Isotérmico (T = constante)</option>
+                            <option value="isobarico">Isobárico (P = constante)</option>
+                            <option value="isocoro">Isocórico (V = constante)</option>
+                            <option value="politropico">Politrópico (PVⁿ = constante)</option>
+                        </select>
+                    </div>
+
+                    <!-- Selección de Gas -->
+                    <div class="grupo-control">
+                        <label for="gas">Gas Ideal:</label>
+                        <select id="gas" onchange="actualizarConstantes()">
+                            <option value="aire">Aire</option>
+                            <option value="nitrogeno">Nitrógeno (N₂)</option>
+                            <option value="oxigeno">Oxígeno (O₂)</option>
+                            <option value="argon">Argón (Ar)</option>
+                            <option value="hidrogeno">Hidrógeno (H₂)</option>
+                        </select>
+                    </div>
+
+                    <!-- Constantes del Gas -->
+                    <div class="caja-constantes">
+                        <h4>Constantes del Gas</h4>
+                        <div class="constante-item">
+                            <span>R:</span>
+                            <span id="const_R">0.287</span> kJ/(kg·K)
+                        </div>
+                        <div class="constante-item">
+                            <span>cp:</span>
+                            <span id="const_cp">1.005</span> kJ/(kg·K)
+                        </div>
+                        <div class="constante-item">
+                            <span>cv:</span>
+                            <span id="const_cv">0.718</span> kJ/(kg·K)
+                        </div>
+                        <div class="constante-item">
+                            <span>γ (cp/cv):</span>
+                            <span id="const_gamma">1.40</span>
+                        </div>
+                    </div>
+
+                    <!-- Masa -->
+                    <div class="grupo-control">
+                        <label for="masa">Masa del Sistema (kg):</label>
+                        <input type="number" id="masa" value="1.0" step="0.1" min="0.1">
+                    </div>
+
+                    <!-- Campos Dinámicos -->
+                    <div id="campos-dinamicos">
+                        <!-- Se actualizan dinámicamente con JavaScript -->
+                    </div>
+
+                    <!-- Botón Calcular -->
+                    <button class="boton-calcular" onclick="realizarCalculo()">
+                        🧮 CALCULAR
+                    </button>
+
+                    <!-- Mensaje de Error -->
+                    <div id="mensaje-error" class="mensaje-error" style="display: none;"></div>
+                </div>
+
+                <!-- Panel Derecho: Resultados -->
+                <div class="panel panel-resultados">
+                    <!-- Pestaña: Resultados -->
+                    <div id="resultado-container" style="display: none;">
+                        <h2>📈 Resultados</h2>
+
+                        <!-- Fórmula Utilizada -->
+                        <div class="caja-resultado">
+                            <h4>Fórmula Utilizada</h4>
+                            <div class="formula-display" id="formula-display"></div>
+                        </div>
+
+                        <!-- Procedimiento Matemático -->
+                        <div class="caja-resultado">
+                            <h4>Procedimiento Matemático</h4>
+                            <div class="procedimiento-display" id="procedimiento-display"></div>
+                        </div>
+
+                        <!-- Resultado Final -->
+                        <div class="caja-resultado resultado-destacado">
+                            <h4>Resultado Final</h4>
+                            <div class="resultado-valor">
+                                <div class="resultado-linea">
+                                    <span class="resultado-label">Δs (específica):</span>
+                                    <span class="resultado-numero" id="result_delta_s">-</span>
+                                    <span class="resultado-unidad">kJ/(kg·K)</span>
+                                </div>
+                                <div class="resultado-linea">
+                                    <span class="resultado-label">ΔS (total):</span>
+                                    <span class="resultado-numero" id="result_delta_S">-</span>
+                                    <span class="resultado-unidad">kJ/K</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Interpretación Física -->
+                        <div class="caja-resultado">
+                            <h4>💡 Interpretación Física</h4>
+                            <div class="interpretacion-display" id="interpretacion-display"></div>
+                        </div>
+
+                        <!-- Diagrama T-s -->
+                        <div class="caja-resultado">
+                            <h4>Diagrama T-s</h4>
+                            <div id="diagrama-ts" style="height: 400px; margin-top: 15px;"></div>
+                        </div>
+
+                        <!-- Gráficos Paramétricos -->
+                        <div class="caja-resultado">
+                            <h4>📊 Gráficos Paramétricos</h4>
+                            <div style="margin-top: 15px;">
+                                <div id="grafico-entropia-volumen" style="height: 350px; margin-bottom: 20px;"></div>
+                                <div id="grafico-entropia-temperatura" style="height: 350px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje inicial -->
+                    <div id="mensaje-inicial" style="text-align: center; padding: 80px 20px; color: #999;">
+                        <p style="font-size: 14px; font-weight: 500;">👈 Completa los datos y presiona CALCULAR</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: TEORÍA -->
+        <section id="teoria" class="seccion">
+            <h2>📚 Teoría de Entropía en Gases Ideales</h2>
+            <div class="contenido-teoria">
+                <!-- Definición -->
+                <div class="caja-teoria">
+                    <h3>1. Definición de Entropía</h3>
+                    <p>
+                        La entropía (<strong>S</strong>) es una propiedad termodinámica extensiva que mide el grado de desorden 
+                        molecular o la irreversibilidad de un proceso. Para un proceso reversible infinitesimal:
+                    </p>
+                    <div class="ecuacion">dS = δQ<sub>rev</sub> / T</div>
+                    <p>
+                        Donde δQ<sub>rev</sub> es el calor transferido reversiblemente y T es la temperatura absoluta.
+                        <br><strong>Referencia:</strong> Cengel & Boles, Termodinámica (Cap. 7)
+                    </p>
+                </div>
+
+                <!-- Segunda Ley -->
+                <div class="caja-teoria">
+                    <h3>2. Segunda Ley de la Termodinámica</h3>
+                    <p>
+                        La Segunda Ley establece que la entropía del universo siempre aumenta en cualquier proceso natural:
+                    </p>
+                    <div class="ecuacion">ΔS<sub>universo</sub> = ΔS<sub>sistema</sub> + ΔS<sub>alrededores</sub> ≥ 0</div>
+                    <p>
+                        Para un proceso reversible: ΔS<sub>universo</sub> = 0<br>
+                        Para un proceso irreversible: ΔS<sub>universo</sub> > 0
+                    </p>
+                </div>
+
+                <!-- Ecuaciones Tds -->
+                <div class="caja-teoria">
+                    <h3>3. Ecuaciones Tds (Gibbs)</h3>
+                    <p>
+                        Las ecuaciones Tds relacionan los cambios de entropía con otras propiedades:
+                    </p>
+                    <div class="ecuacion">Tds = du + Pdv<br>Tds = dh - vdP</div>
+                    <p>
+                        Donde u es energía interna específica, h es entalpía específica, P es presión y v es volumen específico.
+                    </p>
+                </div>
+
+                <!-- Gases Ideales -->
+                <div class="caja-teoria">
+                    <h3>4. Gases Ideales - Cambio de Entropía</h3>
+                    <p>
+                        Para un gas ideal, el cambio de entropía específica entre dos estados se calcula como:
+                    </p>
+                    <div class="ecuacion">
+                        Δs = c<sub>v</sub> ln(T₂/T₁) + R ln(v₂/v₁)<br><br>
+                        O equivalentemente:<br><br>
+                        Δs = c<sub>p</sub> ln(T₂/T₁) - R ln(P₂/P₁)
+                    </div>
+                    <p>
+                        Donde c<sub>v</sub> es capacidad calorífica a volumen constante, c<sub>p</sub> a presión constante, 
+                        y R es la constante del gas.
+                    </p>
+                </div>
+
+                <!-- Procesos Especiales -->
+                <div class="caja-teoria">
+                    <h3>5. Procesos Especiales (Wark & Richards)</h3>
+                    <div style="margin-top: 10px;">
+                        <strong>Isotérmico (T = cte):</strong><br>
+                        <div class="ecuacion">Δs = R ln(v₂/v₁) = -R ln(P₂/P₁)</div>
+
+                        <strong style="margin-top: 15px; display: block;">Isobárico (P = cte):</strong><br>
+                        <div class="ecuacion">Δs = c<sub>p</sub> ln(T₂/T₁)</div>
+
+                        <strong style="margin-top: 15px; display: block;">Isocórico (V = cte):</strong><br>
+                        <div class="ecuacion">Δs = c<sub>v</sub> ln(T₂/T₁)</div>
+
+                        <strong style="margin-top: 15px; display: block;">Adiabático Reversible (Q = 0, s = cte):</strong><br>
+                        <div class="ecuacion">ΔS = 0 (isentrópico)</div>
+
+                        <strong style="margin-top: 15px; display: block;">Politrópico (PV<sup>n</sup> = cte):</strong><br>
+                        <div class="ecuacion">Δs = [c<sub>v</sub> + R/(n-1)] ln(T₂/T₁)</div>
+                    </div>
+                </div>
+
+                <!-- Diagrama T-s -->
+                <div class="caja-teoria">
+                    <h3>6. Diagrama Temperatura-Entropía (T-s)</h3>
+                    <p>
+                        El diagrama T-s es una herramienta fundamental en termodinámica que permite visualizar procesos reversibles.
+                        En este diagrama:
+                    </p>
+                    <ul>
+                        <li><strong>Eje horizontal:</strong> Entropía específica (s) [kJ/(kg·K)]</li>
+                        <li><strong>Eje vertical:</strong> Temperatura absoluta (T) [K]</li>
+                        <li><strong>Área bajo la curva:</strong> Representa el calor transferido en un proceso reversible</li>
+                        <li><strong>Líneas verticales:</strong> Procesos isoentrópicos (s = cte)</li>
+                        <li><strong>Líneas horizontales:</strong> Procesos isotérmicos (T = cte)</li>
+                    </ul>
+                </div>
+
+                <!-- Aplicaciones -->
+                <div class="caja-teoria">
+                    <h3>7. Aplicaciones en Ingeniería</h3>
+                    <ul>
+                        <li><strong>Turbinas de gas:</strong> Evaluación de eficiencia isentrópica</li>
+                        <li><strong>Ciclos termodinámicos:</strong> Otto, Diesel, Rankine, Brayton</li>
+                        <li><strong>Compresores:</strong> Trabajo mínimo requerido en compresión isentrópica</li>
+                        <li><strong>Procesos industriales:</strong> Análisis de irreversibilidades</li>
+                        <li><strong>Energías renovables:</strong> Diseño de ciclos de conversión de energía</li>
+                    </ul>
+                </div>
+
+                <!-- Bibliografía -->
+                <div class="caja-teoria" style="border-left-color: #4CAF50;">
+                    <h3>📖 Referencias Bibliográficas</h3>
+                    <ol>
+                        <li>Çengel, Y. A., & Boles, M. A. (2015). <strong>Termodinámica</strong> (8ª ed.). McGraw-Hill.</li>
+                        <li>Wark, K., & Richards, D. G. (2001). <strong>Thermodynamics</strong> (6ª ed.). McGraw-Hill.</li>
+                        <li>Smith, J. M., Van Ness, H. C., & Abbott, M. M. (2007). <strong>Introduction to Chemical Engineering Thermodynamics</strong>. McGraw-Hill.</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: AYUDA -->
+        <section id="ayuda" class="seccion">
+            <h2>❓ Ayuda y Preguntas Frecuentes</h2>
+            <div class="contenido-ayuda">
+                <div class="faq-item">
+                    <h4>¿Cuáles son las unidades de entrada?</h4>
+                    <p>
+                        • <strong>Temperatura:</strong> Kelvin (K)<br>
+                        • <strong>Presión:</strong> kPa (kilopascales)<br>
+                        • <strong>Volumen específico:</strong> m³/kg<br>
+                        • <strong>Masa:</strong> kg
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Cuáles son las unidades de salida?</h4>
+                    <p>
+                        • <strong>Δs (entropía específica):</strong> kJ/(kg·K)<br>
+                        • <strong>ΔS (entropía total):</strong> kJ/K
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Qué significa que Δs sea negativo?</h4>
+                    <p>
+                        Un Δs negativo indica que la entropía específica disminuyó. Esto puede ocurrir en procesos:
+                        <br>• Compresión de gas (a temperatura constante o decreciente)
+                        <br>• Enfriamiento del sistema
+                        <br>Estos procesos requieren trabajo externo o pérdida de calor.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Cómo se relacionan cv y cp?</h4>
+                    <p>
+                        Para un gas ideal: <strong>cp - cv = R</strong><br>
+                        Donde R es la constante del gas. La razón γ = cp/cv es característica de cada gas.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Qué es un proceso isentrópico?</h4>
+                    <p>
+                        Un proceso isentrópico es un proceso reversible y adiabático donde ΔS = 0. 
+                        Es una idealización que define el límite teórico de eficiencia de dispositivos como turbinas y compresores.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Puedo usar agua o vapor de agua?</h4>
+                    <p>
+                        En esta versión, la calculadora está limitada a gases ideales. El agua/vapor requiere tablas de vapor 
+                        y la ecuación de estado no es ideal. Para sustancias que cambian de fase, se recomienda usar tablas termodinámicas.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Cómo interpreto el diagrama T-s?</h4>
+                    <p>
+                        El diagrama T-s muestra el proceso desde el estado inicial (punto 1) al final (punto 2):
+                        <br>• El área bajo la curva representa el calor transferido (en un proceso reversible)
+                        <br>• La pendiente muestra cómo cambia la temperatura con la entropía
+                        <br>• Líneas verticales = procesos isoentrópicos
+                        <br>• Líneas horizontales = procesos isotérmicos
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Cuál es la diferencia entre gases reales e ideales?</h4>
+                    <p>
+                        Los gases ideales obedecen PV = nRT bajo todas las condiciones. Los gases reales se desvían 
+                        especialmente a altas presiones y bajas temperaturas. Esta calculadora usa ecuaciones para gases ideales, 
+                        válidas en condiciones normales de presión y temperatura.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Puedo descargar los resultados?</h4>
+                    <p>
+                        Actualmente los resultados se muestran en pantalla. Puedes capturar la pantalla (screenshot) 
+                        o copiar los valores directamente. En futuras versiones se agregará exportación a PDF.
+                    </p>
+                </div>
+
+                <div class="faq-item">
+                    <h4>¿Quién desarrolló esta aplicación?</h4>
+                    <p>
+                        EntropySolver Web fue desarrollado como un proyecto académico universitario 
+                        para la asignatura de Termodinámica, basado en la teoría de Cengel & Boles y Wark & Richards.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>
+                <strong>EntropySolver</strong> - Calculadora de Entropía para Gases Ideales
+                <br>
+                Basado en teoría de Cengel & Boles y Wark & Richards
+                <br>
+                <span style="font-size: 12px; color: #999;">
+                    Proyecto Académico Universitario de Termodinámica | © 2024
+                </span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

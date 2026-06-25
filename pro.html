@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EntropySolver PRO - Solucionador Avanzado de Entropía</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_pro.css') }}">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <!-- NAVEGACIÓN PROFESIONAL -->
+    <nav class="navbar-pro">
+        <div class="navbar-container-pro">
+            <div class="navbar-brand-pro">
+                <span class="navbar-logo-pro">🌿 EntropySolver PRO</span>
+                <span class="navbar-subtitle-pro">Solucionador Avanzado de Entropía en Gases Ideales</span>
+            </div>
+            <ul class="navbar-menu-pro">
+                <li><a href="#calculadora" onclick="cambiarSeccion('calculadora')">Calculadora</a></li>
+                <li><a href="#balance" onclick="cambiarSeccion('balance')">Balance</a></li>
+                <li><a href="#teoria" onclick="cambiarSeccion('teoria')">Teoría</a></li>
+                <li><a href="#ayuda" onclick="cambiarSeccion('ayuda')">Ayuda</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container-pro">
+        <!-- SECCIÓN: CALCULADORA PRINCIPAL -->
+        <section id="calculadora" class="seccion-pro activa">
+            <div class="contenido-principal-pro">
+                <!-- PANEL IZQUIERDO: ENTRADA -->
+                <div class="panel-pro panel-entrada-pro">
+                    <h2>📊 Entrada de Datos</h2>
+
+                    <!-- Modo de Cálculo -->
+                    <div class="grupo-control-pro">
+                        <label for="modo_calculo">Modo de Cálculo:</label>
+                        <select id="modo_calculo" onchange="cambiarModoCalculo()">
+                            <option value="delta_s_tv">Δs por T-V (Temperatura-Volumen)</option>
+                            <option value="delta_s_tp">Δs por T-P (Temperatura-Presión)</option>
+                            <option value="procesos_especiales">Procesos Especiales</option>
+                            <option value="balance_entropia">Balance de Entropía</option>
+                            <option value="generacion_entropia">Generación de Entropía</option>
+                        </select>
+                    </div>
+
+                    <!-- Selección de Gas -->
+                    <div class="grupo-control-pro">
+                        <label for="gas-pro">Gas Ideal:</label>
+                        <select id="gas-pro" onchange="actualizarConstantesPro()">
+                            <option value="aire">Aire</option>
+                            <option value="nitrogeno">Nitrógeno (N₂)</option>
+                            <option value="oxigeno">Oxígeno (O₂)</option>
+                            <option value="argon">Argón (Ar)</option>
+                            <option value="hidrogeno">Hidrógeno (H₂)</option>
+                            <option value="helio">Helio (He)</option>
+                            <option value="co2">Dióxido de Carbono (CO₂)</option>
+                            <option value="h2o">Vapor de Agua (H₂O)</option>
+                        </select>
+                    </div>
+
+                    <!-- Información del Gas -->
+                    <div class="caja-info-pro">
+                        <h4>Información del Gas</h4>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">R:</span>
+                                <span id="const_R-pro">0.287</span> kJ/(kg·K)
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">cp:</span>
+                                <span id="const_cp-pro">1.005</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">cv:</span>
+                                <span id="const_cv-pro">0.718</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">γ:</span>
+                                <span id="const_gamma-pro">1.40</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Masa -->
+                    <div class="grupo-control-pro">
+                        <label for="masa-pro">Masa (kg):</label>
+                        <input type="number" id="masa-pro" value="1.0" step="0.1" min="0.1">
+                    </div>
+
+                    <!-- Campos Dinámicos -->
+                    <div id="campos-dinamicos-pro"></div>
+
+                    <!-- Botones de Acción -->
+                    <div class="grupo-botones-pro">
+                        <button class="btn-calcular-pro" onclick="realizarCalculoPro()">
+                            🧮 CALCULAR
+                        </button>
+                        <button class="btn-exportar-pro" onclick="exportarPDF()">
+                            📄 EXPORTAR PDF
+                        </button>
+                    </div>
+
+                    <div class="panel-academico-pro">
+                        <h4>Modo Profesor</h4>
+                        <div class="grupo-botones-academicos-pro">
+                            <button class="btn-academico-pro" onclick="explicarProcedimiento()">🧠 Explícame el procedimiento</button>
+                            <button class="btn-academico-pro btn-ejercicio-pro" onclick="generarEjercicioAleatorio()">🎯 Generar ejercicio aleatorio</button>
+                        </div>
+                        <div id="ejercicio-aleatorio-pro" class="caja-ejercicio-pro"></div>
+                        <div class="grupo-control-pro" style="margin-top: 1rem;">
+                            <label for="respuesta-estudiante-pro">Comprueba mi respuesta (ΔS):</label>
+                            <input type="text" id="respuesta-estudiante-pro" placeholder="0.145">
+                        </div>
+                        <button class="btn-verificar-pro" onclick="verificarRespuestaEstudiante()">✅ Comprueba mi respuesta</button>
+                        <div id="resultado-verificacion-pro" class="mensaje-verificacion-pro"></div>
+                    </div>
+
+                    <!-- Mensaje de Error -->
+                    <div id="mensaje-error-pro" class="mensaje-error-pro" style="display: none;"></div>
+                </div>
+
+                <!-- PANEL DERECHO: RESULTADOS -->
+                <div class="panel-pro panel-resultados-pro">
+                    <!-- Resultados -->
+                    <div id="resultado-container-pro" style="display: none;">
+                        <h2>📈 Resultados</h2>
+
+                        <!-- Fórmula -->
+                        <div class="caja-resultado-pro">
+                            <h4>Ecuación Utilizada</h4>
+                            <div class="formula-display-pro" id="formula-display-pro"></div>
+                        </div>
+
+                        <!-- Resultado Principal -->
+                        <div class="caja-resultado-pro resultado-destacado-pro">
+                            <h4>Resultado Final</h4>
+                            <div class="resultado-valor-pro">
+                                <div class="resultado-linea-pro">
+                                    <span class="resultado-label-pro">Δs:</span>
+                                    <span class="resultado-numero-pro" id="result_delta_s-pro">-</span>
+                                    <span class="resultado-unidad-pro">kJ/(kg·K)</span>
+                                </div>
+                                <div class="resultado-linea-pro">
+                                    <span class="resultado-label-pro">ΔS:</span>
+                                    <span class="resultado-numero-pro" id="result_delta_S-pro">-</span>
+                                    <span class="resultado-unidad-pro">kJ/K</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Generación de Entropía -->
+                        <div id="resultados-sgen-pro" style="display: none;">
+                            <div class="caja-resultado-pro resultado-entropia-pro">
+                                <h4>Generación de Entropía</h4>
+                                <div class="resultado-valor-pro">
+                                    <div class="resultado-linea-pro">
+                                        <span class="resultado-label-pro">Sgen:</span>
+                                        <span class="resultado-numero-pro" id="result_Sgen-pro">-</span>
+                                        <span class="resultado-unidad-pro">kJ/K</span>
+                                    </div>
+                                    <div class="resultado-linea-pro">
+                                        <span class="resultado-label-pro">Reversibilidad:</span>
+                                        <span class="resultado-indicator-pro" id="result_reversibilidad-pro">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Procedimiento -->
+                        <div class="caja-resultado-pro">
+                            <h4>Procedimiento Paso a Paso</h4>
+                            <div class="procedimiento-display-pro" id="procedimiento-display-pro"></div>
+                        </div>
+
+                        <!-- Interpretación Física -->
+                        <div class="caja-resultado-pro">
+                            <h4>💡 Interpretación Física</h4>
+                            <div class="interpretacion-display-pro" id="interpretacion-display-pro"></div>
+                        </div>
+
+                        <!-- Diagramas -->
+                        <div class="caja-resultado-pro">
+                            <h4>Diagramas Termodinámicos</h4>
+                            <div id="diagrama-ts-pro" style="height: 350px; margin-bottom: 20px;"></div>
+                            <div id="diagrama-pv-pro" style="height: 350px; margin-bottom: 20px;"></div>
+                        </div>
+
+                        <!-- Gráficos Parametrizados -->
+                        <div class="caja-resultado-pro">
+                            <h4>Análisis Parametrizados</h4>
+                            <div id="grafico-entropia-volumen-pro" style="height: 350px; margin-bottom: 20px;"></div>
+                            <div id="grafico-entropia-temperatura-pro" style="height: 350px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Mensaje Inicial -->
+                    <div id="mensaje-inicial-pro" style="text-align: center; padding: 100px 20px; color: #999;">
+                        <p style="font-size: 16px; font-weight: 500;">👈 Completa los datos y presiona CALCULAR</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: BALANCE DE ENTROPÍA -->
+        <section id="balance" class="seccion-pro">
+            <h2>⚖️ Balance de Entropía</h2>
+            <div class="contenido-balance-pro">
+                <p>Esta sección permite análisis avanzado del balance de entropía según Cengel & Boles.</p>
+                <div class="formula-box-pro">
+                    <strong>Ecuación del Balance:</strong><br>
+                    ΔS = Q/T + Sgen<br><br>
+                    Donde:<br>
+                    • ΔS = Cambio de entropía del sistema<br>
+                    • Q = Calor transferido<br>
+                    • T = Temperatura<br>
+                    • Sgen = Generación de entropía
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: TEORÍA -->
+        <section id="teoria" class="seccion-pro">
+            <h2>📚 Teoría Fundamental</h2>
+            <div class="contenido-teoria-pro">
+                <div class="tema-pro">
+                    <h3>Ecuaciones Tds (Gibbs)</h3>
+                    <p>T·ds = du + P·dv</p>
+                    <p>T·ds = dh - v·dP</p>
+                    <p><strong>Referencia:</strong> Cengel & Boles, Capítulo 7</p>
+                </div>
+                <div class="tema-pro">
+                    <h3>Segunda Ley de la Termodinámica</h3>
+                    <p>ΔS_universo ≥ 0</p>
+                    <p>Para un proceso reversible: ΔS_universo = 0</p>
+                    <p>Para irreversible: ΔS_universo > 0</p>
+                </div>
+                <div class="tema-pro">
+                    <h3>Generación de Entropía</h3>
+                    <p>Sgen = ΔS - Q/T</p>
+                    <p>Si Sgen = 0 → Reversible</p>
+                    <p>Si Sgen > 0 → Irreversible (Posible)</p>
+                    <p>Si Sgen < 0 → Imposible</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN: AYUDA -->
+        <section id="ayuda" class="seccion-pro">
+            <h2>❓ Ayuda y Referencia</h2>
+            <div class="contenido-ayuda-pro">
+                <div class="pregunta-pro">
+                    <h4>¿Cuál es la diferencia entre versión estándar y PRO?</h4>
+                    <p>La versión PRO incluye: Balance de entropía, Generación de entropía, 8 gases diferentes, Diagrama P-v, Exportación a PDF, y análisis de reversibilidad automático.</p>
+                </div>
+                <div class="pregunta-pro">
+                    <h4>¿Cómo interpreto Sgen?</h4>
+                    <p>Sgen = 0: Proceso reversible</p>
+                    <p>Sgen > 0: Proceso irreversible pero posible</p>
+                    <p>Sgen < 0: Proceso imposible (violaría la Segunda Ley)</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- PIE DE PÁGINA -->
+    <footer class="footer-pro">
+        <p><strong>EntropySolver PRO</strong> - Solucionador Profesional de Entropía | Basado en Cengel & Boles y Wark & Richards</p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main_pro.js') }}"></script>
+</body>
+</html>
